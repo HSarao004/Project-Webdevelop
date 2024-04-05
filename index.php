@@ -1,4 +1,3 @@
-
 <?php
 // Include database connection file
 require('connect.php');
@@ -28,10 +27,8 @@ $filter_year = isset($_GET['year']) ? $_GET['year'] : null;
 $posts = [];
 
 // Query to fetch all watch posts
-$statement = $db->query("SELECT id, make, model, watchYear, movement, image_url, DATE_FORMAT(date_created, '%M %d, %Y, %h:%i %p') AS formatted_date 
-                         FROM watchPost 
-                         ORDER BY date_created DESC");
-$posts = $statement->fetchAll(PDO::FETCH_ASSOC);
+$query = "SELECT id, make, model, watchYear, movement, image_url, DATE_FORMAT(date_created, '%M %d, %Y, %h:%i %p') AS formatted_date 
+          FROM watchPost";
 
 // Handle filtering if a year link is clicked
 if ($filter_year) {
@@ -40,18 +37,13 @@ if ($filter_year) {
     if (count($year_range) === 2) {
         $start_year = intval($year_range[0]);
         $end_year = intval($year_range[1]);
-
-        // Query to fetch watch posts within the specified year range
-        $statement = $db->prepare("SELECT id, make, model, watchYear, movement, image_url, DATE_FORMAT(date_created, '%M %d, %Y, %h:%i %p') AS formatted_date 
-                                   FROM watchPost 
-                                   WHERE watchYear >= ? AND watchYear <= ?
-                                   ORDER BY date_created DESC");
-        $statement->execute([$start_year, $end_year]);
-
-        // Fetch posts
-        $posts = $statement->fetchAll(PDO::FETCH_ASSOC);
+        $query .= " WHERE watchYear >= $start_year AND watchYear <= $end_year";
     }
 }
+
+// Execute the query
+$statement = $db->query($query . " ORDER BY date_created DESC");
+$posts = $statement->fetchAll(PDO::FETCH_ASSOC);
 
 // Initialize variables for search functionality
 $search_results = [];
@@ -60,17 +52,30 @@ $search_query = '';
 // Handle search form submission
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['search'])) {
     $search_query = trim($_POST['search_query']);
-
     // Query to search for watch posts based on the search query
-    $statement = $db->prepare("SELECT id, make, model, watchYear, movement, image_url, DATE_FORMAT(date_created, '%M %d, %Y, %h:%i %p') AS formatted_date 
-                               FROM watchPost 
-                               WHERE make LIKE ? OR model LIKE ?
-                               ORDER BY date_created DESC");
-    $statement->execute(["%$search_query%", "%$search_query%"]);
-
+    $search_statement = $db->prepare("SELECT id, make, model, watchYear, movement, image_url, DATE_FORMAT(date_created, '%M %d, %Y, %h:%i %p') AS formatted_date 
+                                      FROM watchPost 
+                                      WHERE make LIKE ? OR model LIKE ?
+                                      ORDER BY date_created DESC");
+    $search_statement->execute(["%$search_query%", "%$search_query%"]);
     // Fetch search results
-    $search_results = $statement->fetchAll(PDO::FETCH_ASSOC);
+    $search_results = $search_statement->fetchAll(PDO::FETCH_ASSOC);
 }
+
+// Handle comment submission
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_comment'])) {
+    $post_id = $_POST['post_id'];
+    $name = $_POST['name'];
+    $comment = $_POST['comment'];
+
+    // Insert comment into the database
+    $comment_statement = $db->prepare("INSERT INTO reviews (id, name, content) VALUES (?, ?, ?)");
+    $comment_statement->execute([$post_id, $name, $comment]);
+}
+
+// Query to fetch comments
+$comments_statement = $db->query("SELECT * FROM reviews ORDER BY date_posted DESC");
+$comments = $comments_statement->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <!DOCTYPE html>
@@ -92,7 +97,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['search'])) {
 
 <!-- Search form -->
 <form method="post" action="">
-    <label for="search_query">Search your Watch here </label>
+    <label for="search_query">Search your Watch here:</label>
     <input type="text" id="search_query" name="search_query" value="<?= htmlentities($search_query) ?>">
     <button type="submit" name="search">Search</button>
 </form>
@@ -102,36 +107,87 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['search'])) {
 
 <?php if (!empty($search_results)) : ?>
     <h2>Search Results</h2>
-    <?php foreach ($search_results as $post) : ?>
-        <div>
+    <?php foreach ($search_results as $result) : ?>
+        <div class="watch_post">
+            <h2><?= $result['make'] ?> <?= $result['model'] ?></h2>
+            <p><strong>Year:</strong> <?= $result['watchYear'] ?></p>
+            <p><strong>Movement:</strong> <?= $result['movement'] ?></p>
+            <p><strong>Date:</strong> <?= $result['formatted_date'] ?></p>
+            <?php if (!empty($result['image_url'])) : ?>
+                <img src="<?= $result['image_url'] ?>" alt="Watch Image">
+            <?php endif; ?>
+
+            <!-- Comment form for each watch post -->
+            <form method="post" action="">
+                <input type="hidden" name="post_id" value="<?= $result['id'] ?>">
+                <label for="name">Your Name:</label>
+                <input type="text" id="name" name="name" required><br>
+                <label for="comment">Your Comment:</label><br>
+                <textarea id="comment" name="comment" rows="4" cols="50" required></textarea><br>
+                <button type="submit" name="submit_comment">Submit Comment</button>
+            </form>
+
+            <!-- Display comments for this watch post -->
+            <?php
+            $post_comments = array_filter($comments, function ($comment) use ($result) {
+                return $comment['id'] == $result['id'];
+            });
+            ?>
+            <?php if (!empty($post_comments)) : ?>
+                <h3>Comments</h3>
+                <?php foreach ($post_comments as $comment) : ?>
+                    <div class="comment">
+                        <p><strong>Name:</strong> <?= $comment['name'] ?></p>
+                        <p><?= $comment['content'] ?></p>
+                    </div>
+                <?php endforeach; ?>
+            <?php else : ?>
+                <p>No comments yet.</p>
+            <?php endif; ?>
+        </div>
+    <?php endforeach; ?>
+<?php elseif (!empty($posts)) : ?>
+    <?php foreach ($posts as $post) : ?>
+        <div class="watch_post">
             <h2><?= $post['make'] ?> <?= $post['model'] ?></h2>
             <p><strong>Year:</strong> <?= $post['watchYear'] ?></p>
             <p><strong>Movement:</strong> <?= $post['movement'] ?></p>
             <p><strong>Date:</strong> <?= $post['formatted_date'] ?></p>
             <?php if (!empty($post['image_url'])) : ?>
-                <!-- Display image if image URL is not empty -->
                 <img src="<?= $post['image_url'] ?>" alt="Watch Image">
+            <?php endif; ?>
+
+            <!-- Comment form for each watch post -->
+            <form method="post" action="">
+                <input type="hidden" name="post_id" value="<?= $post['id'] ?>">
+                <label for="name">Your Name:</label>
+                <input type="text" id="name" name="name" required><br>
+                <label for="comment">Your Comment:</label><br>
+                <textarea id="comment" name="comment" rows="4" cols="50" required></textarea><br>
+                <button type="submit" name="submit_comment">Submit Comment</button>
+            </form>
+
+            <!-- Display comments for this watch post -->
+            <?php
+            $post_comments = array_filter($comments, function ($comment) use ($post) {
+                return $comment['id'] == $post['id'];
+            });
+            ?>
+            <?php if (!empty($post_comments)) : ?>
+                <h3>Comments</h3>
+                <?php foreach ($post_comments as $comment) : ?>
+                    <div class="comment">
+                        <p><strong>Name:</strong> <?= $comment['name'] ?></p>
+                        <p><?= $comment['content'] ?></p>
+                    </div>
+                <?php endforeach; ?>
+            <?php else : ?>
+                <p>No comments yet.</p>
             <?php endif; ?>
         </div>
     <?php endforeach; ?>
 <?php else : ?>
-    <?php if (!empty($posts)) : ?>
-        <h2>Watch Posts</h2>
-        <?php foreach ($posts as $post) : ?>
-            <div>
-                <h2><?= $post['make'] ?> <?= $post['model'] ?></h2>
-                <p><strong>Year:</strong> <?= $post['watchYear'] ?></p>
-                <p><strong>Movement:</strong> <?= $post['movement'] ?></p>
-                <p><strong>Date:</strong> <?= $post['formatted_date'] ?></p>
-                <?php if (!empty($post['image_url'])) : ?>
-                    <!-- Display image if image URL is not empty -->
-                    <img src="<?= $post['image_url'] ?>" alt="Watch Image">
-                <?php endif; ?>
-            </div>
-        <?php endforeach; ?>
-    <?php else : ?>
-        <p>No watch posts found.</p>
-    <?php endif; ?>
+    <p>No watch posts found.</p>
 <?php endif; ?>
 </body>
 </html>
