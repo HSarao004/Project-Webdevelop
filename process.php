@@ -6,6 +6,11 @@ require 'authenticate.php';
 $error_message = '';
 $uploadOk = 1; // Initialize $uploadOk variable
 
+// Fetch categories from the database
+$category_query = "SELECT * FROM category";
+$category_statement = $db->query($category_query);
+$categories = $category_statement->fetchAll(PDO::FETCH_ASSOC);
+
 // Function to check if the file is a valid image
 function file_is_an_image($temporary_path, $new_path) {
     $allowed_mime_types = ['image/gif', 'image/jpeg', 'image/png'];
@@ -70,6 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $model = filter_input(INPUT_POST, 'model', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
     $watchYear = filter_input(INPUT_POST, 'watchYear', FILTER_VALIDATE_INT);
     $movement = filter_input(INPUT_POST, 'movement', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+    $category = filter_input(INPUT_POST, 'category', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
 
     // Check if an image file is uploaded
     if (!empty($_FILES['image']['name'])) {
@@ -112,8 +118,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     // Insert the watch post into the database
     if ($uploadOk) {
-        $query = "INSERT INTO watchPost (make, model, watchYear, movement, image_url, date_created)
-                  VALUES (:make, :model, :watchYear, :movement, :imagePath, NOW())";
+        $query = "INSERT INTO watchPost (make, model, watchYear, movement, image_url, date_created, category)
+                  VALUES (:make, :model, :watchYear, :movement, :imagePath, NOW(), :category)";
         $stmt = $db->prepare($query);
 
         $stmt->bindParam(':make', $make);
@@ -122,6 +128,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $stmt->bindParam(':movement', $movement);
         // If no image uploaded, set a default value for image_url
         $stmt->bindParam(':imagePath', $imagePath, PDO::PARAM_STR | PDO::PARAM_NULL);
+        $stmt->bindParam(':category', $category);
 
         if ($stmt->execute()) {
             echo "Watch post added successfully!";
@@ -177,7 +184,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         input[type="text"],
         input[type="number"],
-        input[type="file"] {
+        input[type="file"],
+        select {
             width: 100%;
             padding: 8px;
             border: 1px solid #ccc;
@@ -220,6 +228,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     <label for="movement">Movement:</label>
     <input type="text" id="movement" name="movement" required>
+
+    <label for="category">Category:</label>
+    <select id="category" name="category" required>
+        <option value="">Select a category</option>
+        <?php foreach ($categories as $category) : ?>
+            <option value="<?= $category['category'] ?>"><?= $category['category'] ?></option>
+        <?php endforeach; ?>
+    </select>
 
     <label for="image">Image:</label>
     <input type="file" id="image" name="image" accept="image/*">

@@ -132,7 +132,6 @@ $posts = $statement->fetchAll(PDO::FETCH_ASSOC);
 
 <body>
     <div class="nav-bar">
-
         <a id="blog_link" href="process.php">New Post</a>
         <a id="blog_link" href="adindex.php">Admin Dashboard</a>
     </div>
@@ -191,7 +190,7 @@ $posts = $statement->fetchAll(PDO::FETCH_ASSOC);
     <?php if (!empty($posts)) : ?>
         <?php foreach ($posts as $post) : ?>
             <div class="watch_post">
-                <h2><?= $post['make'] ?> <?= $post['model'] ?></h2>
+                <h2><a href="fullpost.php?id=<?= $post['id'] ?>"><?= $post['make'] ?> <?= $post['model'] ?></a></h2>
                 <p><strong>Year:</strong> <?= $post['watchYear'] ?></p>
                 <p><strong>Movement:</strong> <?= $post['movement'] ?></p>
                 <p><strong>Category:</strong> <?= $post['category'] ?></p>
