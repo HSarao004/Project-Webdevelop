@@ -55,6 +55,7 @@ if (!empty($filter_letter)) {
 <div class="home_blog">
     <a href="index.php">Go to main page</a>
     <a id="blog_link" href="process.php">New Post</a>
+    <a href="category.php">categories</a>
 </div>
 <h1>Welcome authorized user.</h1>
 <h2>Recently Posted Watch Entries</h2>

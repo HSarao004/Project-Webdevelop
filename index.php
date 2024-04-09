@@ -3,7 +3,8 @@
 require('connect.php');
 
 // Function to generate year range links
-function generateYearRangeLinks() {
+function generateYearRangeLinks()
+{
     $year_ranges = array(
         "Prior to 1950" => "0-1950",
         "1950-1970" => "1950-1970",
@@ -20,66 +21,107 @@ function generateYearRangeLinks() {
     return $links;
 }
 
+// Fetch all distinct watch categories from the database
+$category_query = "SELECT DISTINCT category FROM watchPost";
+$category_statement = $db->query($category_query);
+$categories = $category_statement->fetchAll(PDO::FETCH_ASSOC);
+
 // Check if a year filter is applied
 $filter_year = isset($_GET['year']) ? $_GET['year'] : null;
+
+// Check if a category filter is applied
+$filter_category = isset($_GET['category']) ? $_GET['category'] : null;
+
+// Check if an excluded category filter is applied
+$exclude_category = isset($_GET['exclude_category']) ? $_GET['exclude_category'] : null;
+
+// Check if a search query is submitted
+$search_query = isset($_GET['search']) ? $_GET['search'] : '';
+
+// Pagination variables
+$page = isset($_GET['page']) ? intval($_GET['page']) : 1; // Current page number
+$results_per_page = 3; // Number of results per page
+
+// Calculate the offset for pagination
+$offset = ($page - 1) * $results_per_page;
 
 // Initialize $posts array
 $posts = [];
 
-// Query to fetch all watch posts
-$query = "SELECT id, make, model, watchYear, movement, image_url, DATE_FORMAT(date_created, '%M %d, %Y, %h:%i %p') AS formatted_date 
+// Query to fetch total number of watch posts
+$total_query = "SELECT COUNT(*) AS total FROM watchPost";
+
+// Add filters to the query if they exist
+if ($filter_year || $filter_category || $exclude_category || $search_query) {
+    $total_query .= " WHERE";
+    $conditions = [];
+    if ($filter_year) {
+        $year_range = explode('-', $filter_year);
+        if (count($year_range) === 2) {
+            $start_year = intval($year_range[0]);
+            $end_year = intval($year_range[1]);
+            $conditions[] = " watchYear >= $start_year AND watchYear <= $end_year";
+        }
+    }
+    if ($filter_category) {
+        $conditions[] = " category = '$filter_category'";
+    }
+    if ($exclude_category) {
+        $conditions[] = " category != '$exclude_category'";
+    }
+    if ($search_query) {
+        $conditions[] = " (make LIKE '%$search_query%' OR model LIKE '%$search_query%' OR category LIKE '%$search_query%')";
+    }
+    $total_query .= implode(" AND ", $conditions);
+}
+
+// Execute the total query and fetch the total number of results
+$total_statement = $db->query($total_query);
+$total_result = $total_statement->fetch(PDO::FETCH_ASSOC);
+$total_posts = intval($total_result['total']);
+
+// Calculate total number of pages
+$total_pages = ceil($total_posts / $results_per_page);
+
+// Query to fetch watch posts with pagination
+$query = "SELECT id, make, model, watchYear, movement, image_url, DATE_FORMAT(date_created, '%M %d, %Y, %h:%i %p') AS formatted_date, category 
           FROM watchPost";
 
-// Handle filtering if a year link is clicked
-if ($filter_year) {
-    // Extract start and end years from the filter
-    $year_range = explode('-', $filter_year);
-    if (count($year_range) === 2) {
-        $start_year = intval($year_range[0]);
-        $end_year = intval($year_range[1]);
-        $query .= " WHERE watchYear >= $start_year AND watchYear <= $end_year";
+// Add filters to the query if they exist
+if ($filter_year || $filter_category || $exclude_category || $search_query) {
+    $query .= " WHERE";
+    $conditions = [];
+    if ($filter_year) {
+        $year_range = explode('-', $filter_year);
+        if (count($year_range) === 2) {
+            $start_year = intval($year_range[0]);
+            $end_year = intval($year_range[1]);
+            $conditions[] = " watchYear >= $start_year AND watchYear <= $end_year";
+        }
     }
+    if ($filter_category) {
+        $conditions[] = " category = '$filter_category'";
+    }
+    if ($exclude_category) {
+        $conditions[] = " category != '$exclude_category'";
+    }
+    if ($search_query) {
+        $conditions[] = " (make LIKE '%$search_query%' OR model LIKE '%$search_query%' OR category LIKE '%$search_query%')";
+    }
+    $query .= implode(" AND ", $conditions);
 }
+
+// Add pagination limit and offset to the query
+$query .= " ORDER BY date_created DESC LIMIT $results_per_page OFFSET $offset";
 
 // Execute the query
-$statement = $db->query($query . " ORDER BY date_created DESC");
+$statement = $db->query($query);
 $posts = $statement->fetchAll(PDO::FETCH_ASSOC);
-
-// Initialize variables for search functionality
-$search_results = [];
-$search_query = '';
-
-// Handle search form submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['search'])) {
-    $search_query = trim($_POST['search_query']);
-    // Query to search for watch posts based on the search query
-    $search_statement = $db->prepare("SELECT id, make, model, watchYear, movement, image_url, DATE_FORMAT(date_created, '%M %d, %Y, %h:%i %p') AS formatted_date 
-                                      FROM watchPost 
-                                      WHERE make LIKE ? OR model LIKE ?
-                                      ORDER BY date_created DESC");
-    $search_statement->execute(["%$search_query%", "%$search_query%"]);
-    // Fetch search results
-    $search_results = $search_statement->fetchAll(PDO::FETCH_ASSOC);
-}
-
-// Handle comment submission
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['submit_comment'])) {
-    $post_id = $_POST['post_id'];
-    $name = $_POST['name'];
-    $comment = $_POST['comment'];
-
-    // Insert comment into the database
-    $comment_statement = $db->prepare("INSERT INTO reviews (id, name, content) VALUES (?, ?, ?)");
-    $comment_statement->execute([$post_id, $name, $comment]);
-}
-
-// Query to fetch comments
-$comments_statement = $db->query("SELECT * FROM reviews ORDER BY date_posted DESC");
-$comments = $comments_statement->fetchAll(PDO::FETCH_ASSOC);
 ?>
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -87,107 +129,103 @@ $comments = $comments_statement->fetchAll(PDO::FETCH_ASSOC);
     <link rel="stylesheet" href="main.css">
     <title>Welcome to my Wrist rotation CMS</title>
 </head>
+
 <body>
-<div class="home_blog">
-    <a href="index.php">Go to main page</a>
-    <a id="blog_link" href="process.php">New Post</a>
-    <a id="blog_link" href="adindex.php">Admin Dashboard</a>
-</div>
-<h1>Welcome authorized user.</h1>
+    <div class="home_blog">
 
-<!-- Search form -->
-<form method="post" action="">
-    <label for="search_query">Search your Watch here:</label>
-    <input type="text" id="search_query" name="search_query" value="<?= htmlentities($search_query) ?>">
-    <button type="submit" name="search">Search</button>
-</form>
+        <a id="blog_link" href="process.php">New Post</a>
+        <a id="blog_link" href="adindex.php">Admin Dashboard</a>
+    </div>
+    <h1>Welcome authorized user.</h1>
 
-<!-- Display year range links -->
-<div><?php echo generateYearRangeLinks(); ?></div>
+    <!-- Search form -->
+    <form method="get" action="">
+        <label for="search">Search:</label>
+        <input type="text" id="search" name="search" value="<?= htmlentities($search_query) ?>" placeholder="Enter keywords">
+        <button type="submit">Submit</button>
+        <!-- Include category filter in the search form -->
+        <input type="hidden" name="category" value="<?= htmlentities($filter_category) ?>">
+        <input type="hidden" name="exclude_category" value="<?= htmlentities($exclude_category) ?>">
+        <input type="hidden" name="year" value="<?= htmlentities($filter_year) ?>">
+    </form>
 
-<?php if (!empty($search_results)) : ?>
-    <h2>Search Results</h2>
-    <?php foreach ($search_results as $result) : ?>
-        <div class="watch_post">
-            <h2><?= $result['make'] ?> <?= $result['model'] ?></h2>
-            <p><strong>Year:</strong> <?= $result['watchYear'] ?></p>
-            <p><strong>Movement:</strong> <?= $result['movement'] ?></p>
-            <p><strong>Date:</strong> <?= $result['formatted_date'] ?></p>
-            <?php if (!empty($result['image_url'])) : ?>
-                <img src="<?= $result['image_url'] ?>" alt="Watch Image">
+    <!-- Category dropdown -->
+    <form method="get" action="">
+        <label for="category">Select Watch Category:</label>
+        <select name="category" id="category">
+            <option value="">All</option>
+            <?php foreach ($categories as $category) : ?>
+                <option value="<?= $category['category'] ?>" <?= ($filter_category === $category['category']) ? 'selected' : '' ?>>
+                    <?= $category['category'] ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+        <!-- Include search query in the category filter form -->
+        <input type="hidden" name="search" value="<?= htmlentities($search_query) ?>">
+        <input type="hidden" name="exclude_category" value="<?= htmlentities($exclude_category) ?>">
+        <input type="hidden" name="year" value="<?= htmlentities($filter_year) ?>">
+        <button type="submit">Filter</button>
+    </form>
+
+    <!-- Exclude category dropdown -->
+    <form method="get" action="">
+        <label for="exclude_category">Exclude Category:</label>
+        <select name="exclude_category" id="exclude_category">
+            <option value="">None</option>
+            <?php foreach ($categories as $category) : ?>
+                <option value="<?= $category['category'] ?>" <?= ($exclude_category === $category['category']) ? 'selected' : '' ?>>
+                    <?= $category['category'] ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+        <!-- Include search query and category filter in the exclude category form -->
+        <input type="hidden" name="search" value="<?= htmlentities($search_query) ?>">
+        <input type="hidden" name="category" value="<?= htmlentities($filter_category) ?>">
+        <input type="hidden" name="year" value="<?= htmlentities($filter_year) ?>">
+        <button type="submit">Exclude</button>
+    </form>
+
+    <!-- Display year range links -->
+    <div><?php echo generateYearRangeLinks(); ?></div>
+
+    <?php if (!empty($posts)) : ?>
+        <?php foreach ($posts as $post) : ?>
+            <div class="watch_post">
+                <h2><?= $post['make'] ?> <?= $post['model'] ?></h2>
+                <p><strong>Year:</strong> <?= $post['watchYear'] ?></p>
+                <p><strong>Movement:</strong> <?= $post['movement'] ?></p>
+                <p><strong>Category:</strong> <?= $post['category'] ?></p>
+                <p><strong>Date:</strong> <?= $post['formatted_date'] ?></p>
+                <?php if (!empty($post['image_url'])) : ?>
+                    <img src="<?= $post['image_url'] ?>" alt="Watch Image">
+                <?php endif; ?>
+
+                <!-- Comment form for each watch post -->
+                <form method="post" action="">
+                    <input type="hidden" name="post_id" value="<?= $post['id'] ?>">
+                    <label for="name">Your Name:</label>
+                    <input type="text" id="name" name="name" required><br>
+                    <label for="comment">Your Comment:</label><br>
+                    <textarea id="comment" name="comment" rows="4" cols="50" required></textarea><br>
+                    <button type="submit" name="submit_comment">Submit Comment</button>
+                </form>
+            </div>
+        <?php endforeach; ?>
+        <!-- Pagination links -->
+        <div class="pagination">
+            <?php if ($page > 1) : ?>
+                <a href="?page=<?= $page - 1 ?>&category=<?= $filter_category ?>&exclude_category=<?= $exclude_category ?>&search=<?= $search_query ?>">Previous</a>
             <?php endif; ?>
-
-            <!-- Comment form for each watch post -->
-            <form method="post" action="">
-                <input type="hidden" name="post_id" value="<?= $result['id'] ?>">
-                <label for="name">Your Name:</label>
-                <input type="text" id="name" name="name" required><br>
-                <label for="comment">Your Comment:</label><br>
-                <textarea id="comment" name="comment" rows="4" cols="50" required></textarea><br>
-                <button type="submit" name="submit_comment">Submit Comment</button>
-            </form>
-
-            <!-- Display comments for this watch post -->
-            <?php
-            $post_comments = array_filter($comments, function ($comment) use ($result) {
-                return $comment['id'] == $result['id'];
-            });
-            ?>
-            <?php if (!empty($post_comments)) : ?>
-                <h3>Comments</h3>
-                <?php foreach ($post_comments as $comment) : ?>
-                    <div class="comment">
-                        <p><strong>Name:</strong> <?= $comment['name'] ?></p>
-                        <p><?= $comment['content'] ?></p>
-                    </div>
-                <?php endforeach; ?>
-            <?php else : ?>
-                <p>No comments yet.</p>
-            <?php endif; ?>
-        </div>
-    <?php endforeach; ?>
-<?php elseif (!empty($posts)) : ?>
-    <?php foreach ($posts as $post) : ?>
-        <div class="watch_post">
-            <h2><?= $post['make'] ?> <?= $post['model'] ?></h2>
-            <p><strong>Year:</strong> <?= $post['watchYear'] ?></p>
-            <p><strong>Movement:</strong> <?= $post['movement'] ?></p>
-            <p><strong>Date:</strong> <?= $post['formatted_date'] ?></p>
-            <?php if (!empty($post['image_url'])) : ?>
-                <img src="<?= $post['image_url'] ?>" alt="Watch Image">
-            <?php endif; ?>
-
-            <!-- Comment form for each watch post -->
-            <form method="post" action="">
-                <input type="hidden" name="post_id" value="<?= $post['id'] ?>">
-                <label for="name">Your Name:</label>
-                <input type="text" id="name" name="name" required><br>
-                <label for="comment">Your Comment:</label><br>
-                <textarea id="comment" name="comment" rows="4" cols="50" required></textarea><br>
-                <button type="submit" name="submit_comment">Submit Comment</button>
-            </form>
-
-            <!-- Display comments for this watch post -->
-            <?php
-            $post_comments = array_filter($comments, function ($comment) use ($post) {
-                return $comment['id'] == $post['id'];
-            });
-            ?>
-            <?php if (!empty($post_comments)) : ?>
-                <h3>Comments</h3>
-                <?php foreach ($post_comments as $comment) : ?>
-                    <div class="comment">
-                        <p><strong>Name:</strong> <?= $comment['name'] ?></p>
-                        <p><?= $comment['content'] ?></p>
-                    </div>
-                <?php endforeach; ?>
-            <?php else : ?>
-                <p>No comments yet.</p>
+            <?php for ($i = 1; $i <= $total_pages; $i++) : ?>
+                <a href="?page=<?= $i ?>&category=<?= $filter_category ?>&exclude_category=<?= $exclude_category ?>&search=<?= $search_query ?>" <?= ($page === $i) ? 'class="active"' : '' ?>><?= $i ?></a>
+            <?php endfor; ?>
+            <?php if ($page < $total_pages) : ?>
+                <a href="?page=<?= $page + 1 ?>&category=<?= $filter_category ?>&exclude_category=<?= $exclude_category ?>&search=<?= $search_query ?>">Next</a>
             <?php endif; ?>
         </div>
-    <?php endforeach; ?>
-<?php else : ?>
-    <p>No watch posts found.</p>
-<?php endif; ?>
+    <?php else : ?>
+        <p>No watch posts found.</p>
+    <?php endif; ?>
 </body>
+
 </html>
