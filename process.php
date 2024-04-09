@@ -137,31 +137,94 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Add Watch Post</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+        }
+
+        .nav_bar {
+            background-color: #333;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .nav_bar a {
+            color: white;
+            text-decoration: none;
+            margin: 0 10px;
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        form {
+            max-width: 500px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="file"] {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        input[type="submit"] {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        input[type="submit"]:hover {
+            background-color: #45a049;
+        }
+    </style>
 </head>
 <body>
-    <a href="index.php">Click here to go to homepage!</a>
-    <a href="adindex.php">Edit or delete post here </a>
-    <h2>Add Watch Post</h2>
-    <?php if (!empty($error_message)) : ?>
-        <p><?= $error_message ?></p>
-    <?php endif; ?>
-    <form action="process.php" method="POST" enctype="multipart/form-data">
-        <label for="make">Make:</label>
-        <input type="text" id="make" name="make" required><br>
+<div class="nav_bar">
+    <a href="index.php">Homepage</a>
+    <a href="adindex.php">Edit or delete Post</a>
+</div>
+<h2>Add Watch Post</h2>
+<?php if (!empty($error_message)) : ?>
+    <p><?= $error_message ?></p>
+<?php endif; ?>
+<form action="process.php" method="POST" enctype="multipart/form-data">
+    <label for="make">Make:</label>
+    <input type="text" id="make" name="make" required>
 
-        <label for="model">Model:</label>
-        <input type="text" id="model" name="model" required><br>
+    <label for="model">Model:</label>
+    <input type="text" id="model" name="model" required>
 
-        <label for="watchYear">Year:</label>
-        <input type="number" id="watchYear" name="watchYear" required><br>
+    <label for="watchYear">Year:</label>
+    <input type="number" id="watchYear" name="watchYear" required>
 
-        <label for="movement">Movement:</label>
-        <input type="text" id="movement" name="movement" required><br>
+    <label for="movement">Movement:</label>
+    <input type="text" id="movement" name="movement" required>
 
-        <label for="image">Image:</label>
-        <input type="file" id="image" name="image" accept="image/*"><br>
+    <label for="image">Image:</label>
+    <input type="file" id="image" name="image" accept="image/*">
 
-        <input type="submit" value="Add Watch Post" name="submit">
-    </form>
+    <input type="submit" value="Add Watch Post" name="submit">
+</form>
 </body>
 </html>

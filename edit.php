@@ -136,6 +136,76 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete'])) {
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="main.css">
     <title>Edit this Watch Post!</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f0f0f0;
+            margin: 0;
+            padding: 0;
+        }
+
+        .home_blog {
+            text-align: center;
+            margin-top: 20px;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        #edit_form {
+            max-width: 500px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 5px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        label {
+            display: block;
+            margin-bottom: 10px;
+        }
+
+        input[type="text"],
+        input[type="number"],
+        select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
+
+        input[type="file"] {
+            margin-top: 10px;
+        }
+
+        img {
+            max-width: 100%;
+            height: auto;
+            margin-bottom: 10px;
+        }
+
+        .button-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .button {
+            background-color: #4CAF50;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        .button:hover {
+            background-color: #45a049;
+        }
+    </style>
 </head>
 <body>
 <div class="home_blog">
@@ -170,11 +240,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete'])) {
             <label for="image">Upload Image:</label>
             <input type="file" id="image" name="image" accept="image/*">
         <?php endif; ?>
-        <input class="button" type="submit" value="Update Post">
-    </form>
-    <form method="post" onsubmit="return confirm('Are you sure you want to delete this post?');">
-        <input type="hidden" name="id" value="<?= $watch['id'] ?>">
-        <button class="button" name="delete" type="submit">Delete</button>
+        <div class="button-container">
+            <input class="button" type="submit" value="Update Post">
+            <button class="button" name="delete" type="submit" onclick="return confirm('Are you sure you want to delete this post?');">Delete</button>
+        </div>
     </form>
 <?php else: ?>
     <?php header("Location: index.php"); ?>

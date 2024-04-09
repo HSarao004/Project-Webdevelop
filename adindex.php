@@ -48,7 +48,7 @@ if (!empty($filter_letter)) {
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link rel="stylesheet" href="main.css">
+    <link rel="stylesheet" href="auth.css">
     <title>Welcome to my Wrist rotation CMS</title>
 </head>
 <body>
