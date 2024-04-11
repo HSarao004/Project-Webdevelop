@@ -120,6 +120,7 @@ button[type="submit"]:hover {
             <input type="password" id="confirm_password" name="confirm_password" required>
 
             <button type="submit">Register</button>
+            
         </form>
     </div>
 </body>
