@@ -134,6 +134,9 @@ $posts = $statement->fetchAll(PDO::FETCH_ASSOC);
     <div class="nav-bar">
         <a id="blog_link" href="process.php">New Post</a>
         <a id="blog_link" href="adindex.php">Admin Dashboard</a>
+        <a id="blog_link" href="login.php">Login page </a>
+        <a id="blog_link" href="signup.php">Signup </a>
+
     </div>
     <h1>Welcome authorized user.</h1>
 
