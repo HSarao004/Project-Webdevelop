@@ -61,6 +61,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['comment_id']) && isse
             $update_statement->bindParam(':reviewid', $comment_id);
             $update_statement->execute();
             break;
+        case 'unhide':
+            // Update status to 'visible' for the comment
+            $unhide_query = "UPDATE reviews SET status = '' WHERE reviewid = :reviewid";
+            $unhide_statement = $db->prepare($unhide_query);
+            $unhide_statement->bindParam(':reviewid', $comment_id);
+            $unhide_statement->execute();
+            break;
         default:
             // Handle invalid moderation action
             break;
@@ -136,6 +143,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['comment_id']) && isse
                         <select name="moderation_action">
                             <option value="delete">Delete</option>
                             <option value="hide">Hide</option>
+                            <option value="unhide">Unhide</option> <!-- Added option for unhide -->
                         </select>
                         <button type="submit">Moderate</button>
                     </form>

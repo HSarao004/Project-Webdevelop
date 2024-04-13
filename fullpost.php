@@ -15,7 +15,7 @@ session_start();
 
 // Function to fetch comments associated with the watch post
 function getComments($postId, $db) {
-    $query = "SELECT * FROM reviews WHERE id = :post_id";
+    $query = "SELECT * FROM reviews WHERE id = :post_id AND status = ''"; // Only fetch comments with empty status
     $statement = $db->prepare($query);
     $statement->bindValue(':post_id', $postId);
     $statement->execute();
@@ -27,15 +27,22 @@ if (isset($_GET['id'])) {
     $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
 
     if ($id !== false) {
-        $query = "SELECT * FROM watchpost WHERE id = :id LIMIT 1";
+        $query = "SELECT * FROM watchpost WHERE id = :id AND image_url != '' LIMIT 1"; // Only select watch posts with non-empty image_url
         $statement = $db->prepare($query);
 
         $statement->bindValue(':id', $id);
         $statement->execute();
         $watch = $statement->fetch();
         
-        // Fetch comments associated with the watch post
-        $comments = getComments($id, $db);
+        // Check if $watch is an array before accessing its elements
+        if (is_array($watch) && !empty($watch)) {
+            // Fetch comments associated with the watch post
+            $comments = getComments($id, $db);
+        } else {
+            // Redirect or display an error message if the watch details are not found
+            echo "Watch details not found.";
+            exit();
+        }
     }
 }
 
@@ -196,14 +203,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['comment'])) {
         <!-- Watch details -->
         <?php if(isset($watch)): ?>
             <div class="watch_details">
-                <img src="<?= $watch['image_url'] ?>" alt="Watch Image">
-                <h2><?= $watch['make'] ?></h2>
-                <p>Model: <?= $watch['model'] ?></p>
-                <p>Year: <?= $watch['watchYear'] ?></p>
-                <p>Movement: <?= $watch['movement'] ?></p>
-                <p>Description: <?= $watch['watchDes'] ?></p>
-                <p>Category: <?= $watch['category'] ?></p>
-                <p>Created: <?= $watch['date_created'] ?></p>
+                <?php if(isset($watch['image_url']) && !empty($watch['image_url'])): ?>
+                    <img src="<?= $watch['image_url'] ?>" alt="Watch Image">
+                <?php endif; ?>
+                <h2><?= isset($watch['make']) ? $watch['make'] : 'N/A' ?></h2>
+                <p>Model: <?= isset($watch['model']) ? $watch['model'] : 'N/A' ?></p>
+                <p>Year: <?= isset($watch['watchYear']) ? $watch['watchYear'] : 'N/A' ?></p>
+                <p>Movement: <?= isset($watch['movement']) ? $watch['movement'] : 'N/A' ?></p>
+                <p>Description: <?= isset($watch['watchDes']) ? $watch['watchDes'] : 'N/A' ?></p>
+                <p>Category: <?= isset($watch['category']) ? $watch['category'] : 'N/A' ?></p>
+                <p>Created: <?= isset($watch['date_created']) ? $watch['date_created'] : 'N/A' ?></p>
             </div>
 
             <!-- Display existing comments -->
