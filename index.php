@@ -16,15 +16,12 @@
             align-items: center;
             height: 100vh;
         }
-
         .container {
             text-align: center;
         }
-
         .container h2 {
             margin-bottom: 20px;
         }
-
         .container button {
             padding: 10px 20px;
             margin: 0 10px;
@@ -34,13 +31,11 @@
             background-color: #4CAF50;
             color: white;
         }
-
         .container button:hover {
             background-color: #45a049;
         }
     </style>
 </head>
-
 <body>
     <div class="container">
         <h2>Welcome!</h2>
@@ -49,5 +44,4 @@
         <button onclick="window.location.href='signup.php'">Sign Up</button>
     </div>
 </body>
-
 </html>

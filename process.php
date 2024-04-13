@@ -1,149 +1,163 @@
 <?php
-// Include database connection file
 require 'connect.php';
 require 'authenticate.php';
 
-$error_message = '';
-$uploadOk = 1; // Initialize $uploadOk variable
+$queryCategories = "SELECT * FROM category";
+$stmtCategories = $db->query($queryCategories);
+$categories = $stmtCategories->fetchAll(PDO::FETCH_ASSOC);
 
-// Fetch categories from the database
-$category_query = "SELECT * FROM category";
-$category_statement = $db->query($category_query);
-$categories = $category_statement->fetchAll(PDO::FETCH_ASSOC);
+function resizeImage($imagePath, $newImagePath, $maxWidth) {
+    list($origWidth, $origHeight) = getimagesize($imagePath);
+    $ratio = $origWidth / $maxWidth;
+    $newWidth = $maxWidth;
+    $newHeight = $origHeight / $ratio;
+    $newImage = imagecreatetruecolor($newWidth, $newHeight);
+    $origImage = imagecreatefromjpeg($imagePath);
+    imagecopyresampled($newImage, $origImage, 0, 0, 0, 0, $newWidth, $newHeight, $origWidth, $origHeight);
+    imagejpeg($newImage, $newImagePath);
+    imagedestroy($newImage);
+    imagedestroy($origImage);
+}
 
-// Function to check if the file is a valid image
-function file_is_an_image($temporary_path, $new_path) {
-    $allowed_mime_types = ['image/gif', 'image/jpeg', 'image/png'];
-    $allowed_file_extensions = ['gif', 'jpg', 'jpeg', 'png'];
+function isValidImage($file) {
+    $allowedExtensions = array('jpg', 'jpeg', 'png', 'gif');
+    $fileExtension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+    return in_array($fileExtension, $allowedExtensions);
+}
 
-    $image_size_info = getimagesize($temporary_path);
-    if ($image_size_info !== false) {
-        $actual_mime_type = $image_size_info['mime'];
-        $actual_file_extension = pathinfo($new_path, PATHINFO_EXTENSION);
+function fileIsAnImage($temporaryPath, $newPath) {
+    $allowedMimeTypes = ['image/gif', 'image/jpeg', 'image/png'];
+    $allowedFileExtensions = ['gif', 'jpg', 'jpeg', 'png'];
 
-        $file_extension_is_valid = in_array($actual_file_extension, $allowed_file_extensions);
-        $mime_type_is_valid = in_array($actual_mime_type, $allowed_mime_types);
+    $imageSizeInfo = getimagesize($temporaryPath);
+    if ($imageSizeInfo !== false) {
+        $actualMimeType = $imageSizeInfo['mime'];
+        $actualFileExtension = pathinfo($newPath, PATHINFO_EXTENSION);
 
-        return $file_extension_is_valid && $mime_type_is_valid;
+        $fileExtensionIsValid = in_array($actualFileExtension, $allowedFileExtensions);
+        $mimeTypeIsValid = in_array($actualMimeType, $allowedMimeTypes);
+
+        return $fileExtensionIsValid && $mimeTypeIsValid;
     } else {
         return false; // Failed to get image size information
     }
 }
 
-// Function to resize image to a maximum width of 500 pixels
-function resize_image($source_path, $target_path) {
-    list($source_width, $source_height, $source_type) = getimagesize($source_path);
-
-    // Calculate new height based on a maximum width of 500 pixels
-    $target_width = 500;
-    $target_height = round($source_height * ($target_width / $source_width));
-
-    // Create a new image resource
-    $target_image = imagecreatetruecolor($target_width, $target_height);
-
-    // Load the original image
-    switch ($source_type) {
-        case IMAGETYPE_JPEG:
-            $source_image = imagecreatefromjpeg($source_path);
-            break;
-        case IMAGETYPE_PNG:
-            $source_image = imagecreatefrompng($source_path);
-            break;
-        case IMAGETYPE_GIF:
-            $source_image = imagecreatefromgif($source_path);
-            break;
-        default:
-            return false; // Unsupported image type
+function deleteImageFile($imageUrl) {
+    if (!empty($imageUrl) && file_exists($imageUrl)) {
+        unlink($imageUrl);
     }
-
-    // Resize the image
-    imagecopyresampled($target_image, $source_image, 0, 0, 0, 0, $target_width, $target_height, $source_width, $source_height);
-
-    // Save the resized image
-    imagejpeg($target_image, $target_path);
-
-    // Free up memory
-    imagedestroy($source_image);
-    imagedestroy($target_image);
-
-    return true;
 }
 
-// Check if form is submitted
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['make'], $_POST['model'], $_POST['watchYear'], $_POST['movement'], $_POST['id'])) {
     $make = filter_input(INPUT_POST, 'make', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
     $model = filter_input(INPUT_POST, 'model', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-    $watchYear = filter_input(INPUT_POST, 'watchYear', FILTER_VALIDATE_INT);
+    $watchYear = filter_input(INPUT_POST, 'watchYear', FILTER_SANITIZE_NUMBER_INT);
     $movement = filter_input(INPUT_POST, 'movement', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-    $category = filter_input(INPUT_POST, 'category', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+    $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
 
-    // Check if an image file is uploaded
-    if (!empty($_FILES['image']['name'])) {
-        $targetDir = "uploads/";
-        $targetFile = $targetDir . basename($_FILES["image"]["name"]);
-        $imageFileType = strtolower(pathinfo($targetFile, PATHINFO_EXTENSION));
+    $removeImage = isset($_POST['remove_image']);
 
-        // Check if the uploaded file is a valid image
-        if (!file_is_an_image($_FILES["image"]["tmp_name"], $targetFile)) {
-            $error_message = "Error: File is not a valid image.";
-            $uploadOk = 0;
-        }
-
-        // Check file size and allow certain file formats
-        if ($_FILES["image"]["size"] > 500000) {
-            $error_message = "Error: File is too large.";
-            $uploadOk = 0;
-        }
-
-        // Check file extension
-        if (!in_array($imageFileType, ['jpg', 'jpeg', 'png', 'gif'])) {
-            $error_message = "Error: Only JPG, JPEG, PNG & GIF files are allowed.";
-            $uploadOk = 0;
-        }
-
-        if ($uploadOk) {
-            if (move_uploaded_file($_FILES["image"]["tmp_name"], $targetFile)) {
-                // Resize the uploaded image to a maximum width of 500 pixels
-                $resized_image_path = $targetDir . "resized_" . basename($_FILES["image"]["name"]);
-                resize_image($targetFile, $resized_image_path);
-                $imagePath = $resized_image_path;
-            } else {
-                $error_message = "Error: There was an error uploading your file.";
-            }
-        }
-    } else {
-        // If no image uploaded, set a default image path or leave it empty
-        $imagePath = ''; // You can set a default image path here if needed
+    $newImageUploaded = isset($_FILES['image']['name']) && !empty($_FILES['image']['name']);
+    if ($newImageUploaded && !isValidImage($_FILES['image'])) {
+        echo "Error: Invalid image format. Please upload a valid image (jpg, jpeg, png, gif)";
+        exit;
     }
 
-    // Insert the watch post into the database
-    if ($uploadOk) {
-        $query = "INSERT INTO watchPost (make, model, watchYear, movement, image_url, date_created, category)
-                  VALUES (:make, :model, :watchYear, :movement, :imagePath, NOW(), :category)";
-        $stmt = $db->prepare($query);
+    $queryImageUrl = "SELECT image_url FROM watchpost WHERE id = :id";
+    $statementImageUrl = $db->prepare($queryImageUrl);
+    $statementImageUrl->bindValue(':id', $id, PDO::PARAM_INT);
+    $statementImageUrl->execute();
+    $imageUrl = $statementImageUrl->fetchColumn();
 
-        $stmt->bindParam(':make', $make);
-        $stmt->bindParam(':model', $model);
-        $stmt->bindParam(':watchYear', $watchYear);
-        $stmt->bindParam(':movement', $movement);
-        // If no image uploaded, set a default value for image_url
-        $stmt->bindParam(':imagePath', $imagePath, PDO::PARAM_STR | PDO::PARAM_NULL);
-        $stmt->bindParam(':category', $category);
+    $query = "UPDATE watchpost SET make = :make, model = :model, watchYear = :watchYear, movement = :movement";
 
-        if ($stmt->execute()) {
-            echo "Watch post added successfully!";
+    if ($removeImage) {
+        $query .= ", image_url = NULL";
+        deleteImageFile($imageUrl);
+    } elseif ($newImageUploaded) {
+        $imagePath = 'uploads/' . basename($_FILES['image']['name']);
+        $resizedImagePath = 'uploads/resized_' . basename($_FILES['image']['name']);
+
+        if (fileIsAnImage($_FILES['image']['tmp_name'], $imagePath)) {
+            move_uploaded_file($_FILES['image']['tmp_name'], $imagePath);
+
+            resizeImage($imagePath, $resizedImagePath, 500);
+
+            $query .= ", image_url = :image_url";
         } else {
-            $error_message = "Error: Unable to add watch post.";
+            echo "Error: Invalid image format. Please upload a valid image (jpg, jpeg, png, gif)";
+            exit;
         }
     }
+
+    if (isset($_POST['category'])) {
+        $query .= ", category = :category";
+    }
+
+    $query .= " WHERE id = :id";
+
+    $statement = $db->prepare($query);
+    $statement->bindValue(':make', $make);
+    $statement->bindValue(':model', $model);
+    $statement->bindValue(':watchYear', $watchYear);
+    $statement->bindValue(':movement', $movement);
+    $statement->bindValue(':id', $id, PDO::PARAM_INT);
+
+    if ($newImageUploaded) {
+        $statement->bindValue(':image_url', $resizedImagePath);
+    }
+
+    if (isset($_POST['category'])) {
+        $statement->bindValue(':category', $_POST['category']);
+    }
+
+    if ($statement->execute()) {
+        echo "Record updated successfully";
+        header("Location: userpage.php");
+        exit;
+    } else {
+        echo "Error updating record: " . $statement->errorInfo()[2];
+    }
+} elseif (isset($_GET['id'])) {
+    $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+
+    $query = "SELECT * FROM watchpost WHERE id = :id";
+    $statement = $db->prepare($query);
+    $statement->bindValue(':id', $id, PDO::PARAM_INT);
+    $statement->execute();
+    $watch = $statement->fetch();
+} else {
+    header("Location: userpage.php");
+    exit;
+}
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete'], $_POST['id'])) {
+    $queryImageUrl = "SELECT image_url FROM watchpost WHERE id = :id";
+    $statementImageUrl = $db->prepare($queryImageUrl);
+    $statementImageUrl->bindValue(':id', $_POST['id'], PDO::PARAM_INT);
+    $statementImageUrl->execute();
+    $imageUrl = $statementImageUrl->fetchColumn();
+
+    $deleteQuery = "DELETE FROM watchpost WHERE id = :id";
+    $deleteStatement = $db->prepare($deleteQuery);
+    $deleteStatement->bindValue(':id', $_POST['id'], PDO::PARAM_INT);
+    $deleteStatement->execute();
+
+    deleteImageFile($imageUrl);
+
+    header("Location: adindex.php");
+    exit();
 }
 ?>
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Watch Post</title>
+    <link rel="stylesheet" href="main.css">
+    <title>Edit this Watch Post!</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -208,39 +222,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     </style>
 </head>
 <body>
-<div class="nav_bar">
-    <a href="index.php">Homepage</a>
-    <a href="adindex.php">Edit or delete Post</a>
+<div class="home_blog">
+    <h1>Make your changes here!</h1>
 </div>
-<h2>Add Watch Post</h2>
-<?php if (!empty($error_message)) : ?>
-    <p><?= $error_message ?></p>
+<?php if (isset($watch)): ?>
+    <form id="edit_form" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="id" value="<?= $watch['id'] ?>">
+        <label for="make">Make</label>
+        <input type="text" id="make" name="make" value="<?= htmlspecialchars($watch['make']) ?>" required>
+        <label for="model">Model</label>
+        <input type="text" id="model" name="model" value="<?= htmlspecialchars($watch['model']) ?>" required>
+        <label for="watchYear">Year</label>
+        <input type="number" id="watchYear" name="watchYear" value="<?= $watch['watchYear'] ?>" required>
+        <label for="movement">Movement</label>
+        <input type="text" id="movement" name="movement" value="<?= htmlspecialchars($watch['movement']) ?>" required>
+        <label for="category_id">Category:</label>
+        <select id="category_id" name="category" required>
+            <option value="">Select Category</option>
+            <?php foreach ($categories as $category): ?>
+                <option value="<?= $category['category'] ?>" <?= $watch['category'] == $category['category'] ? 'selected' : '' ?>>
+                    <?= $category['category'] ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+        <br>
+        <?php if (!empty($watch['image_url'])): ?>
+            <img src="<?= $watch['image_url'] ?>" alt="Watch Image">
+            <input type="checkbox" id="remove_image" name="remove_image" value="1">
+            <label for="remove_image">Remove Image</label>
+        <?php else: ?>
+            <label for="image">Upload Image:</label>
+            <input type="file" id="image" name="image" accept="image/*">
+        <?php endif; ?>
+        <div class="button-container">
+            <input class="button" type="submit" value="Update Post">
+            <button class="button" name="delete" type="submit" onclick="return confirm('Are you sure you want to delete this post?');">Delete</button>
+        </div>
+    </form>
+<?php else: ?>
+    <?php header("Location: userpage.php"); ?>
+    <?php exit; ?>
 <?php endif; ?>
-<form action="process.php" method="POST" enctype="multipart/form-data">
-    <label for="make">Make:</label>
-    <input type="text" id="make" name="make" required>
-
-    <label for="model">Model:</label>
-    <input type="text" id="model" name="model" required>
-
-    <label for="watchYear">Year:</label>
-    <input type="number" id="watchYear" name="watchYear" required>
-
-    <label for="movement">Movement:</label>
-    <input type="text" id="movement" name="movement" required>
-
-    <label for="category">Category:</label>
-    <select id="category" name="category" required>
-        <option value="">Select a category</option>
-        <?php foreach ($categories as $category) : ?>
-            <option value="<?= $category['category'] ?>"><?= $category['category'] ?></option>
-        <?php endforeach; ?>
-    </select>
-
-    <label for="image">Image:</label>
-    <input type="file" id="image" name="image" accept="image/*">
-
-    <input type="submit" value="Add Watch Post" name="submit">
-</form>
 </body>
 </html>

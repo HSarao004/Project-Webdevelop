@@ -46,13 +46,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['make']) && isset($_PO
         exit;
     }
 
-    $queryImageUrl = "SELECT image_url FROM watchPost WHERE id = :id";
+    $queryImageUrl = "SELECT image_url FROM watchpost WHERE id = :id";
     $statementImageUrl = $db->prepare($queryImageUrl);
     $statementImageUrl->bindValue(':id', $id, PDO::PARAM_INT);
     $statementImageUrl->execute();
     $imageUrl = $statementImageUrl->fetchColumn();
 
-    $query = "UPDATE watchPost SET make = :make, model = :model, watchYear = :watchYear, movement = :movement";
+    $query = "UPDATE watchpost SET make = :make, model = :model, watchYear = :watchYear, movement = :movement";
 
     if ($removeImage) {
         $query .= ", image_url = NULL";
@@ -91,7 +91,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['make']) && isset($_PO
 
     if ($statement->execute()) {
         echo "Record updated successfully";
-        header("Location: index.php");
+        header("Location: userpage.php");
         exit;
     } else {
         echo "Error updating record: " . $statement->errorInfo()[2];
@@ -99,7 +99,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['make']) && isset($_PO
 } elseif (isset($_GET['id'])) {
     $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
 
-    $query = "SELECT * FROM watchPost WHERE id = :id";
+    $query = "SELECT * FROM watchpost WHERE id = :id";
     $statement = $db->prepare($query);
     $statement->bindValue(':id', $id, PDO::PARAM_INT);
     $statement->execute();
@@ -110,13 +110,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['make']) && isset($_PO
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete'])) {
     if (isset($_POST['id'])) {
-        $queryImageUrl = "SELECT image_url FROM watchPost WHERE id = :id";
+        $queryImageUrl = "SELECT image_url FROM watchpost WHERE id = :id";
         $statementImageUrl = $db->prepare($queryImageUrl);
         $statementImageUrl->bindValue(':id', $_POST['id'], PDO::PARAM_INT);
         $statementImageUrl->execute();
         $imageUrl = $statementImageUrl->fetchColumn();
 
-        $deleteQuery = "DELETE FROM watchPost WHERE id = :id";
+        $deleteQuery = "DELETE FROM watchpost WHERE id = :id";
         $deleteStatement = $db->prepare($deleteQuery);
         $deleteStatement->bindValue(':id', $_POST['id'], PDO::PARAM_INT);
         $deleteStatement->execute();
@@ -246,7 +246,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete'])) {
         </div>
     </form>
 <?php else: ?>
-    <?php header("Location: index.php"); ?>
+    <?php header("Location: userpage.php"); ?>
     <?php exit; ?>
 <?php endif; ?>
 </body>

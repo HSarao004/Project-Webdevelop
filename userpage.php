@@ -136,7 +136,6 @@ $posts = $statement->fetchAll(PDO::FETCH_ASSOC);
         <a id="blog_link" href="adindex.php">Admin Dashboard</a>
         <a id="blog_link" href="login.php">Login page </a>
         <a id="blog_link" href="signup.php">Signup </a>
-
     </div>
     <h1>Welcome authorized user.</h1>
 
@@ -201,16 +200,6 @@ $posts = $statement->fetchAll(PDO::FETCH_ASSOC);
                 <?php if (!empty($post['image_url'])) : ?>
                     <img src="<?= $post['image_url'] ?>" alt="Watch Image">
                 <?php endif; ?>
-
-                <!-- Comment form for each watch post -->
-                <form method="post" action="">
-                    <input type="hidden" name="post_id" value="<?= $post['id'] ?>">
-                    <label for="name">Your Name:</label>
-                    <input type="text" id="name" name="name" required><br>
-                    <label for="comment">Your Comment:</label><br>
-                    <textarea id="comment" name="comment" rows="4" cols="50" required></textarea><br>
-                    <button type="submit" name="submit_comment">Submit Comment</button>
-                </form>
             </div>
         <?php endforeach; ?>
         <!-- Pagination links -->

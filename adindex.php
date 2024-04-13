@@ -40,6 +40,32 @@ if (!empty($filter_letter)) {
                                ORDER BY $sort_by $sort_order");
     $statement->execute([$filter_letter . '%']);
 }
+
+// Process moderation actions for comments
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['comment_id']) && isset($_POST['moderation_action'])) {
+    $comment_id = $_POST['comment_id'];
+    $moderation_action = $_POST['moderation_action'];
+
+    switch ($moderation_action) {
+        case 'delete':
+            // Delete comment from the database
+            $delete_query = "DELETE FROM reviews WHERE reviewid = :reviewid";
+            $delete_statement = $db->prepare($delete_query);
+            $delete_statement->bindParam(':reviewid', $comment_id);
+            $delete_statement->execute();
+            break;
+        case 'hide':
+            // Update status to 'hidden' for the comment
+            $update_query = "UPDATE reviews SET status = 'hidden' WHERE reviewid = :reviewid";
+            $update_statement = $db->prepare($update_query);
+            $update_statement->bindParam(':reviewid', $comment_id);
+            $update_statement->execute();
+            break;
+        default:
+            // Handle invalid moderation action
+            break;
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -53,7 +79,7 @@ if (!empty($filter_letter)) {
 </head>
 <body>
 <div class="home_blog">
-    <a href="index.php">Go to main page</a>
+    <a href="userpage.php">Go to main page</a>
     <a id="blog_link" href="process.php">New Post</a>
     <a href="category.php">categories</a>
     <a href="edituser.php">Edit user</a>
@@ -86,6 +112,38 @@ if (!empty($filter_letter)) {
         <p><strong>Date:</strong> <?= $post['formatted_date'] ?></p>
         <img src="<?= $post['image_url'] ?>" alt="Watch Image">
         <p><a href="edit.php?id=<?= $post['id'] ?>">Edit</a></p>
+    </div>
+    <!-- Comment Section -->
+    <div class="comment-section">
+        <h3>Comments</h3>
+        <?php
+        // Query to fetch comments for the current watch post
+        $comments_query = "SELECT * FROM reviews WHERE id = :id ORDER BY date_posted DESC"; // Order comments by date_created in descending order
+        $comments_stmt = $db->prepare($comments_query);
+        $comments_stmt->bindParam(':id', $post['id']);
+        $comments_stmt->execute();
+
+        while ($comment = $comments_stmt->fetch(PDO::FETCH_ASSOC)) {
+            ?>
+            <div class="comment">
+                <div class="content">
+                    <p>Name: <?= $comment['name'] ?></p>
+                    <p>Comment: <?= $comment['content'] ?></p>
+                </div>
+                <div class="moderation">
+                    <form action="" method="POST">
+                        <input type="hidden" name="comment_id" value="<?php echo $comment['reviewid']; ?>">
+                        <select name="moderation_action">
+                            <option value="delete">Delete</option>
+                            <option value="hide">Hide</option>
+                        </select>
+                        <button type="submit">Moderate</button>
+                    </form>
+                </div>
+            </div>
+            <?php
+        }
+        ?>
     </div>
 <?php endwhile; ?>
 </body>

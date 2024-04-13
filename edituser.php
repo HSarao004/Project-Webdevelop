@@ -167,7 +167,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     <td>
                         <form action="" method="post">
                             <input type="hidden" name="userID" value="<?= $user['userID'] ?>">
-                            <input type="text" name="newUsername" placeholder="New Username">
+                            <input type="email" name="newUsername" placeholder="New Username">
                             <input type="password" name="newPassword" placeholder="New Password">
                             <button type="submit" name="update">Update</button>
                             <button type="submit" name="delete" onclick="return confirm('Are you sure you want to delete this user?')">Delete</button>
@@ -179,7 +179,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                 <td></td>
                 <td>
                     <form action="" method="post">
-                        <input type="text" name="newUsername" placeholder="New Username" required>
+                        <input type="email" name="newUsername" placeholder="New Username" required>
                         <input type="password" name="newPassword" placeholder="New Password" required>
                         <button type="submit" name="create">Create</button>
                     </form>
@@ -190,6 +190,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
     </table>
     <a href="adindex.php">Admin Dashboard</a>
     <a href="logout.php">Logout</a>
+    
 </body>
 
 </html>
