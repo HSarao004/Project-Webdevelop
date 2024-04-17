@@ -38,10 +38,10 @@
 </head>
 <body>
     <div class="container">
-        <h2>Welcome!</h2>
+        <h2>Welcome to the Wrist Rotation Website </h2>
         <p>Please choose an option:</p>
-        <button onclick="window.location.href='login.php'">Login</button>
-        <button onclick="window.location.href='signup.php'">Sign Up</button>
+        <button onclick="href='login.php'">Login</button>
+        <button onclick="href='signup.php'">Sign Up</button>
     </div>
 </body>
 </html>

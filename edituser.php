@@ -20,8 +20,8 @@ $error = '';
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     if (isset($_POST['update'])) {
         // Update user functionality
-        $userID = filter_input(INPUT_POST, 'userID', FILTER_SANITIZE_NUMBER_INT);
-        $newUsername = filter_input(INPUT_POST, 'newUsername', FILTER_SANITIZE_STRING);
+        $userID = filter_input(INPUT_POST, 'userID', FILTER_SANITIZE_NUMBER_INT);//Sanitization
+        $newUsername = filter_input(INPUT_POST, 'newUsername', FILTER_SANITIZE_FULL_SPECIAL_CHARS);//Sanitization
 
         if (!empty($userID) && !empty($newUsername)) {
             $query = "UPDATE user SET username = :username WHERE userID = :userID";
@@ -39,7 +39,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     } elseif (isset($_POST['delete'])) {
         // Delete user functionality
-        $userID = filter_input(INPUT_POST, 'userID', FILTER_SANITIZE_NUMBER_INT);
+        $userID = filter_input(INPUT_POST, 'userID', FILTER_SANITIZE_NUMBER_INT);//Sanitization
 
         if (!empty($userID)) {
             $query = "DELETE FROM user WHERE userID = :userID";
@@ -56,7 +56,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
     } elseif (isset($_POST['create'])) {
         // Create new user functionality
-        $newUsername = filter_input(INPUT_POST, 'newUsername', FILTER_SANITIZE_STRING);
+        $newUsername = filter_input(INPUT_POST, 'newUsername', FILTER_SANITIZE_FULL_SPECIAL_CHARS);//Sanitization
 
         if (!empty($newUsername)) {
             $newPassword = password_hash($_POST['newPassword'], PASSWORD_DEFAULT);

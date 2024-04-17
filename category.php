@@ -4,33 +4,41 @@ require 'connect.php';
 
 // Create Category
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_category'])) {
-    $category_name = filter_input(INPUT_POST, 'category_name', FILTER_SANITIZE_STRING);
+    $category_name = filter_input(INPUT_POST, 'category_name', FILTER_SANITIZE_FULL_SPECIAL_CHARS); // Validation and sanitization
 
-    $query = "INSERT INTO category (category) VALUES (:category_name)";
-    $stmt = $db->prepare($query);
-    $stmt->bindParam(':category_name', $category_name);
+    if (!empty($category_name)) {
+        $query = "INSERT INTO category (category) VALUES (:category_name)";
+        $stmt = $db->prepare($query);
+        $stmt->bindParam(':category_name', $category_name);
 
-    if ($stmt->execute()) {
-        echo "Category created successfully!";
+        if ($stmt->execute()) {
+            echo "Category created successfully!";
+        } else {
+            echo "Error creating category: " . $stmt->errorInfo()[2];
+        }
     } else {
-        echo "Error creating category: " . $stmt->errorInfo()[2];
+        echo "Category name cannot be empty!";
     }
 }
 
 // Update Category
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_category'])) {
-    $category_id = filter_input(INPUT_POST, 'category_id', FILTER_VALIDATE_INT);
-    $new_category_name = filter_input(INPUT_POST, 'new_category_name', FILTER_SANITIZE_STRING);
+    $category_id = filter_input(INPUT_POST, 'category_id', FILTER_VALIDATE_INT); // Validation
+    $new_category_name = filter_input(INPUT_POST, 'new_category_name', FILTER_SANITIZE_FULL_SPECIAL_CHARS); // Sanitization
 
-    $query = "UPDATE category SET category = :new_category_name WHERE category_id = :category_id";
-    $stmt = $db->prepare($query);
-    $stmt->bindParam(':new_category_name', $new_category_name);
-    $stmt->bindParam(':category_id', $category_id);
+    if (!empty($new_category_name) && $category_id !== false) {
+        $query = "UPDATE category SET category = :new_category_name WHERE category_id = :category_id";
+        $stmt = $db->prepare($query);
+        $stmt->bindParam(':new_category_name', $new_category_name);
+        $stmt->bindParam(':category_id', $category_id);
 
-    if ($stmt->execute()) {
-        echo "Category updated successfully!";
+        if ($stmt->execute()) {
+            echo "Category updated successfully!";
+        } else {
+            echo "Error updating category: " . $stmt->errorInfo()[2];
+        }
     } else {
-        echo "Error updating category: " . $stmt->errorInfo()[2];
+        echo "Category ID must be a valid integer and new category name cannot be empty!";
     }
 }
 ?>
@@ -104,7 +112,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_category'])) {
     </style>
 </head>
 <body>
-
     <h1>Create or Update Category</h1>
 
     <!-- HTML form for creating a new category -->
@@ -131,6 +138,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_category'])) {
         <input type="submit" value="Update Category" name="update_category">
     </form>
 
-    <a href="index.php">Home</a>
+    <a href="userpage.php">Home</a>
 </body>
 </html>

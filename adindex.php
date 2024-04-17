@@ -6,6 +6,7 @@ require('connect.php');
 function sanitize($data) {
     return htmlspecialchars(strip_tags(trim($data)));
 }
+
 // Process sorting if sorting parameter is present in the URL
 $sort_by = isset($_GET['sort']) ? sanitize($_GET['sort']) : 'date_created'; // Default sorting by date_created
 $sort_order = isset($_GET['order']) ? $_GET['order'] : 'desc'; // Default sorting order
@@ -47,29 +48,33 @@ if (!empty($filter_letter)) {
 
 // Process moderation actions for comments
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['comment_id']) && isset($_POST['moderation_action'])) {
-    $comment_id = $_POST['comment_id'];
-    $moderation_action = $_POST['moderation_action'];
+    // Sanitize comment_id as numeric
+    $comment_id = isset($_POST['comment_id']) ? filter_var($_POST['comment_id'], FILTER_SANITIZE_NUMBER_INT) : '';
+    $comment_id = is_numeric($comment_id) ? $comment_id : 0;
+
+    // Sanitize moderation_action
+    $moderation_action = isset($_POST['moderation_action']) ? sanitize($_POST['moderation_action']) : '';
 
     switch ($moderation_action) {
         case 'delete':
             // Delete comment from the database
             $delete_query = "DELETE FROM reviews WHERE reviewid = :reviewid";
             $delete_statement = $db->prepare($delete_query);
-            $delete_statement->bindParam(':reviewid', $comment_id);
+            $delete_statement->bindParam(':reviewid', $comment_id, PDO::PARAM_INT);
             $delete_statement->execute();
             break;
         case 'hide':
             // Update status to 'hidden' for the comment
             $update_query = "UPDATE reviews SET status = 'hidden' WHERE reviewid = :reviewid";
             $update_statement = $db->prepare($update_query);
-            $update_statement->bindParam(':reviewid', $comment_id);
+            $update_statement->bindParam(':reviewid', $comment_id, PDO::PARAM_INT);
             $update_statement->execute();
             break;
         case 'unhide':
             // Update status to 'visible' for the comment
             $unhide_query = "UPDATE reviews SET status = '' WHERE reviewid = :reviewid";
             $unhide_statement = $db->prepare($unhide_query);
-            $unhide_statement->bindParam(':reviewid', $comment_id);
+            $unhide_statement->bindParam(':reviewid', $comment_id, PDO::PARAM_INT);
             $unhide_statement->execute();
             break;
         default:
@@ -131,7 +136,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['comment_id']) && isse
         // Query to fetch comments for the current watch post
         $comments_query = "SELECT * FROM reviews WHERE id = :id ORDER BY date_posted DESC"; // Order comments by date_created in descending order
         $comments_stmt = $db->prepare($comments_query);
-        $comments_stmt->bindParam(':id', $post['id']);
+        $comments_stmt->bindParam(':id', $post['id'], PDO::PARAM_INT);
         $comments_stmt->execute();
 
         while ($comment = $comments_stmt->fetch(PDO::FETCH_ASSOC)) {

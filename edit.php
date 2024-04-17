@@ -33,7 +33,7 @@ function deleteImageFile($imageUrl) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (isset($_POST['id']) && isset($_POST['delete'])) {
-        $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+        $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);//sanitization
 
         $queryImageUrl = "SELECT image_url FROM watchpost WHERE id = :id";
         $statementImageUrl = $db->prepare($queryImageUrl);
@@ -51,11 +51,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header("Location: adindex.php");
         exit();
     } elseif (isset($_POST['make']) && isset($_POST['model']) && isset($_POST['watchYear']) && isset($_POST['movement']) && isset($_POST['id'])) {
-        $make = filter_input(INPUT_POST, 'make', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $model = filter_input(INPUT_POST, 'model', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $watchYear = filter_input(INPUT_POST, 'watchYear', FILTER_SANITIZE_NUMBER_INT);
-        $movement = filter_input(INPUT_POST, 'movement', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-        $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+        $make = filter_input(INPUT_POST, 'make', FILTER_SANITIZE_FULL_SPECIAL_CHARS);//sanitization
+        $model = filter_input(INPUT_POST, 'model', FILTER_SANITIZE_FULL_SPECIAL_CHARS);//sanitization
+        $watchYear = filter_input(INPUT_POST, 'watchYear', FILTER_SANITIZE_NUMBER_INT);//sanitization
+        $movement = filter_input(INPUT_POST, 'movement', FILTER_SANITIZE_FULL_SPECIAL_CHARS);//sanitization
+        $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);//sanitization
 
         $removeImage = isset($_POST['remove_image']) ? true : false;
 
@@ -119,7 +119,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 if (isset($_GET['id'])) {
-    $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
+    $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);//sanitization
 
     $query = "SELECT * FROM watchpost WHERE id = :id";
     $statement = $db->prepare($query);
