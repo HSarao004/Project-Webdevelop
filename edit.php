@@ -31,72 +31,94 @@ function deleteImageFile($imageUrl) {
     }
 }
 
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['make']) && isset($_POST['model']) && isset($_POST['watchYear']) && isset($_POST['movement']) && isset($_POST['id'])) {
-    $make = filter_input(INPUT_POST, 'make', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-    $model = filter_input(INPUT_POST, 'model', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-    $watchYear = filter_input(INPUT_POST, 'watchYear', FILTER_SANITIZE_NUMBER_INT);
-    $movement = filter_input(INPUT_POST, 'movement', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
-    $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (isset($_POST['id']) && isset($_POST['delete'])) {
+        $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
 
-    $removeImage = isset($_POST['remove_image']) ? true : false;
+        $queryImageUrl = "SELECT image_url FROM watchpost WHERE id = :id";
+        $statementImageUrl = $db->prepare($queryImageUrl);
+        $statementImageUrl->bindValue(':id', $id, PDO::PARAM_INT);
+        $statementImageUrl->execute();
+        $imageUrl = $statementImageUrl->fetchColumn();
 
-    $newImageUploaded = isset($_FILES['image']['name']) && !empty($_FILES['image']['name']);
-    if ($newImageUploaded && !isValidImage($_FILES['image'])) {
-        echo "Error: Invalid image format. Please upload a valid image (jpg, jpeg, png, gif)";
-        exit;
-    }
+        $deleteQuery = "DELETE FROM watchpost WHERE id = :id";
+        $deleteStatement = $db->prepare($deleteQuery);
+        $deleteStatement->bindValue(':id', $id, PDO::PARAM_INT);
+        $deleteStatement->execute();
 
-    $queryImageUrl = "SELECT image_url FROM watchpost WHERE id = :id";
-    $statementImageUrl = $db->prepare($queryImageUrl);
-    $statementImageUrl->bindValue(':id', $id, PDO::PARAM_INT);
-    $statementImageUrl->execute();
-    $imageUrl = $statementImageUrl->fetchColumn();
-
-    $query = "UPDATE watchpost SET make = :make, model = :model, watchYear = :watchYear, movement = :movement";
-
-    if ($removeImage) {
-        $query .= ", image_url = NULL";
         deleteImageFile($imageUrl);
-    } elseif ($newImageUploaded) {
-        $image_path = 'uploads/' . basename($_FILES['image']['name']);
-        $resized_image_path = 'uploads/resized_' . basename($_FILES['image']['name']);
 
-        move_uploaded_file($_FILES['image']['tmp_name'], $image_path);
+        header("Location: adindex.php");
+        exit();
+    } elseif (isset($_POST['make']) && isset($_POST['model']) && isset($_POST['watchYear']) && isset($_POST['movement']) && isset($_POST['id'])) {
+        $make = filter_input(INPUT_POST, 'make', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $model = filter_input(INPUT_POST, 'model', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $watchYear = filter_input(INPUT_POST, 'watchYear', FILTER_SANITIZE_NUMBER_INT);
+        $movement = filter_input(INPUT_POST, 'movement', FILTER_SANITIZE_FULL_SPECIAL_CHARS);
+        $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_NUMBER_INT);
 
-        resizeImage($image_path, $resized_image_path, 500);
+        $removeImage = isset($_POST['remove_image']) ? true : false;
 
-        $query .= ", image_url = :image_url";
+        $newImageUploaded = isset($_FILES['image']['name']) && !empty($_FILES['image']['name']);
+        if ($newImageUploaded && !isValidImage($_FILES['image'])) {
+            echo "Error: Invalid image format. Please upload a valid image (jpg, jpeg, png, gif)";
+            exit;
+        }
+
+        $queryImageUrl = "SELECT image_url FROM watchpost WHERE id = :id";
+        $statementImageUrl = $db->prepare($queryImageUrl);
+        $statementImageUrl->bindValue(':id', $id, PDO::PARAM_INT);
+        $statementImageUrl->execute();
+        $imageUrl = $statementImageUrl->fetchColumn();
+
+        $query = "UPDATE watchpost SET make = :make, model = :model, watchYear = :watchYear, movement = :movement";
+
+        if ($removeImage) {
+            $query .= ", image_url = NULL";
+            deleteImageFile($imageUrl);
+        } elseif ($newImageUploaded) {
+            $image_path = 'uploads/' . basename($_FILES['image']['name']);
+            $resized_image_path = 'uploads/resized_' . basename($_FILES['image']['name']);
+
+            move_uploaded_file($_FILES['image']['tmp_name'], $image_path);
+
+            resizeImage($image_path, $resized_image_path, 500);
+
+            $query .= ", image_url = :image_url";
+        }
+
+        if (isset($_POST['category'])) {
+            $query .= ", category = :category";
+        }
+
+        $query .= " WHERE id = :id";
+
+        $statement = $db->prepare($query);
+        $statement->bindValue(':make', $make);
+        $statement->bindValue(':model', $model);
+        $statement->bindValue(':watchYear', $watchYear);
+        $statement->bindValue(':movement', $movement);
+        $statement->bindValue(':id', $id, PDO::PARAM_INT);
+
+        if ($newImageUploaded) {
+            $statement->bindValue(':image_url', $resized_image_path);
+        }
+
+        if (isset($_POST['category'])) {
+            $statement->bindValue(':category', $_POST['category']);
+        }
+
+        if ($statement->execute()) {
+            echo "Record updated successfully";
+            header("Location: userpage.php");
+            exit;
+        } else {
+            echo "Error updating record: " . $statement->errorInfo()[2];
+        }
     }
+}
 
-    if (isset($_POST['category'])) {
-        $query .= ", category = :category";
-    }
-
-    $query .= " WHERE id = :id";
-
-    $statement = $db->prepare($query);
-    $statement->bindValue(':make', $make);
-    $statement->bindValue(':model', $model);
-    $statement->bindValue(':watchYear', $watchYear);
-    $statement->bindValue(':movement', $movement);
-    $statement->bindValue(':id', $id, PDO::PARAM_INT);
-
-    if ($newImageUploaded) {
-        $statement->bindValue(':image_url', $resized_image_path);
-    }
-
-    if (isset($_POST['category'])) {
-        $statement->bindValue(':category', $_POST['category']);
-    }
-
-    if ($statement->execute()) {
-        echo "Record updated successfully";
-        header("Location: userpage.php");
-        exit;
-    } else {
-        echo "Error updating record: " . $statement->errorInfo()[2];
-    }
-} elseif (isset($_GET['id'])) {
+if (isset($_GET['id'])) {
     $id = filter_input(INPUT_GET, 'id', FILTER_SANITIZE_NUMBER_INT);
 
     $query = "SELECT * FROM watchpost WHERE id = :id";
@@ -107,27 +129,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['make']) && isset($_PO
 } else {
     $id = false;
 }
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['delete'])) {
-    if (isset($_POST['id'])) {
-        $queryImageUrl = "SELECT image_url FROM watchpost WHERE id = :id";
-        $statementImageUrl = $db->prepare($queryImageUrl);
-        $statementImageUrl->bindValue(':id', $_POST['id'], PDO::PARAM_INT);
-        $statementImageUrl->execute();
-        $imageUrl = $statementImageUrl->fetchColumn();
-
-        $deleteQuery = "DELETE FROM watchpost WHERE id = :id";
-        $deleteStatement = $db->prepare($deleteQuery);
-        $deleteStatement->bindValue(':id', $_POST['id'], PDO::PARAM_INT);
-        $deleteStatement->execute();
-
-        deleteImageFile($imageUrl);
-
-        header("Location: adindex.php");
-        exit();
-    }
-}
 ?>
+
 <!DOCTYPE html>
 <html lang="en">
 <head>

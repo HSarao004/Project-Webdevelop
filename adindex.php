@@ -2,8 +2,12 @@
 require('authenticate.php');
 require('connect.php');
 
+// Function to sanitize input data
+function sanitize($data) {
+    return htmlspecialchars(strip_tags(trim($data)));
+}
 // Process sorting if sorting parameter is present in the URL
-$sort_by = isset($_GET['sort']) ? $_GET['sort'] : 'date_created'; // Default sorting by date_created
+$sort_by = isset($_GET['sort']) ? sanitize($_GET['sort']) : 'date_created'; // Default sorting by date_created
 $sort_order = isset($_GET['order']) ? $_GET['order'] : 'desc'; // Default sorting order
 
 // Validate sort parameters to prevent SQL injection
@@ -30,7 +34,7 @@ function generateAlphabetLinks() {
 }
 
 // Check if a letter filter is applied
-$filter_letter = isset($_GET['letter']) ? $_GET['letter'] : '';
+$filter_letter = isset($_GET['letter']) ? sanitize($_GET['letter']) : '';
 
 // Filter watches if a letter filter is applied
 if (!empty($filter_letter)) {

@@ -137,7 +137,7 @@ $posts = $statement->fetchAll(PDO::FETCH_ASSOC);
         <a id="blog_link" href="login.php">Login page </a>
         <a id="blog_link" href="signup.php">Signup </a>
     </div>
-    <h1>Welcome authorized user.</h1>
+    <h1>Welcome to my Wrist rotation &#128336;</h1>
 
     <!-- Search form -->
     <form method="get" action="">

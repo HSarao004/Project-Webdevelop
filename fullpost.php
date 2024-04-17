@@ -1,21 +1,11 @@
 <?php
 
-/************ 
-        
-    Name: Your Name
-    Date: Current Date
-    Description: This PHP script fetches and displays details of a watch from the watchpost table.
-
-****************/
-
 require('connect.php');
 
-// Start the session to access logged-in user information
 session_start();
 
-// Function to fetch comments associated with the watch post
 function getComments($postId, $db) {
-    $query = "SELECT * FROM reviews WHERE id = :post_id AND status = ''"; // Only fetch comments with empty status
+    $query = "SELECT * FROM reviews WHERE id = :post_id AND status = ''";
     $statement = $db->prepare($query);
     $statement->bindValue(':post_id', $postId);
     $statement->execute();
@@ -23,42 +13,32 @@ function getComments($postId, $db) {
 }
 
 if (isset($_GET['id'])) {
-    // Sanitize the id parameter
     $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
 
     if ($id !== false) {
-        $query = "SELECT * FROM watchpost WHERE id = :id AND image_url != '' LIMIT 1"; // Only select watch posts with non-empty image_url
+        $query = "SELECT * FROM watchpost WHERE id = :id LIMIT 1";
         $statement = $db->prepare($query);
-
         $statement->bindValue(':id', $id);
         $statement->execute();
         $watch = $statement->fetch();
-        
-        // Check if $watch is an array before accessing its elements
+
         if (is_array($watch) && !empty($watch)) {
-            // Fetch comments associated with the watch post
             $comments = getComments($id, $db);
         } else {
-            // Redirect or display an error message if the watch details are not found
             echo "Watch details not found.";
             exit();
         }
     }
 }
 
-// Handle comment submission
 if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['comment'])) {
-    // Ensure the user is logged in
     if (!isset($_SESSION['username'])) {
-        // Redirect the user to login page if not logged in
         header("Location: login.php");
         exit();
     }
     
-    // Sanitize and validate the comment content
     $commentContent = trim($_POST['comment']);
     if (!empty($commentContent)) {
-        // Insert the comment into the reviews table
         $insertQuery = "INSERT INTO reviews (id, name, content) VALUES (:id, :name, :content)";
         $insertStatement = $db->prepare($insertQuery);
         $insertStatement->bindValue(':id', $id);
@@ -66,7 +46,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['comment'])) {
         $insertStatement->bindValue(':content', $commentContent);
         $insertStatement->execute();
         
-        // Redirect to prevent form resubmission
         header("Location: fullpost.php?id=$id");
         exit();
     }
@@ -137,7 +116,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['comment'])) {
         background-color: #ddd;
     }
 
-    /* Comments styling */
     .comments {
         margin-top: 20px;
         border-top: 1px solid #ccc;
@@ -159,7 +137,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['comment'])) {
         margin-bottom: 5px;
     }
 
-    /* Comment form styling */
     .comment-form {
         margin-top: 20px;
     }
@@ -197,10 +174,8 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['comment'])) {
    </style>
 </head>
 <body>
-    <!-- Body content -->
     <a href="userpage.php" class="go-back">Go Back</a>
     <div class="watch_details">
-        <!-- Watch details -->
         <?php if(isset($watch)): ?>
             <div class="watch_details">
                 <?php if(isset($watch['image_url']) && !empty($watch['image_url'])): ?>
@@ -214,8 +189,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['comment'])) {
                 <p>Category: <?= isset($watch['category']) ? $watch['category'] : 'N/A' ?></p>
                 <p>Created: <?= isset($watch['date_created']) ? $watch['date_created'] : 'N/A' ?></p>
             </div>
-
-            <!-- Display existing comments -->
             <div class="comments">
                 <h2>Comments</h2>
                 <?php if (!empty($comments)) : ?>
@@ -230,8 +203,6 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['comment'])) {
                     <p>No comments yet.</p>
                 <?php endif; ?>
             </div>
-
-            <!-- Comment submission form -->
             <div class="comment-form">
                 <h2>Add Comment</h2>
                 <?php if(isset($_SESSION['username'])): ?>
