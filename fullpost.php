@@ -13,7 +13,7 @@ function getComments($postId, $db) {
 }
 
 if (isset($_GET['id'])) {
-    $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
+    $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);//Sanitization
 
     if ($id !== false) {
         $query = "SELECT * FROM watchpost WHERE id = :id LIMIT 1";
