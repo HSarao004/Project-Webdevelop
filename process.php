@@ -194,7 +194,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         input[type="submit"] {
-            background-color: #4CAF50;
+            background-color: red;
             color: white;
             padding: 10px 20px;
             border: none;

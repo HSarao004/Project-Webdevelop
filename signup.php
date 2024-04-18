@@ -87,7 +87,7 @@ input[type="password"] {
 
 button[type="submit"] {
     padding: 10px 20px;
-    background-color: #4CAF50;
+    background-color: red;
     color: white;
     border: none;
     border-radius: 5px;
@@ -120,7 +120,7 @@ button[type="submit"]:hover {
             <input type="password" id="confirm_password" name="confirm_password" required>
 
             <button type="submit">Register</button>
-            <a href="index.php">Go Back </a>
+            <a href="index.php">Go to main Page </a>
 
         </form>
     </div>

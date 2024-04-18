@@ -4,7 +4,7 @@ session_start();
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     require_once('connect.php');
 
-    $email = filter_input(INPUT_POST, 'email', FILTER_VALIDATE_EMAIL);
+    $email = filter_input(INPUT_POST, 'email', FILTER_VALIDATE_EMAIL);//sanitization
     $password = $_POST['password'];
 
     if ($email && $password) {
@@ -72,7 +72,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         button[type="submit"] {
-            background-color: #4CAF50;
+            background-color: red;
             color: white;
             padding: 10px 20px;
             border: none;
@@ -93,17 +93,17 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
 <body>
     <div class="container">
-        <h2>Login</h2>
+        <h2>Login Page</h2>
         <?php if (isset($login_error)) : ?>
             <p class="error"><?php echo $login_error; ?></p>
         <?php endif; ?>
         <form action="" method="post">
-            <label for="email">Email:</label>
+            <label for="email">Enter your Email:</label>
             <input type="email" id="email" name="email" required>
-            <label for="password">Password:</label>
+            <label for="password">Enter your Password:</label>
             <input type="password" id="password" name="password" required>
             <button type="submit">Login</button>
-            <a href="index.php ">Go Back </a>
+            <a href="index.php ">Go back to main page </a>
         </form>
     </div>
 </body>

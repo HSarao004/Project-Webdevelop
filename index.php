@@ -7,35 +7,43 @@
     <title>Welcome</title>
     <style>
         body {
+            color: darkblue;
             font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
             margin: 0;
             padding: 0;
             display: flex;
             justify-content: center;
             align-items: center;
             height: 100vh;
+            background-image: url('uploads/bk_image.jpeg');
+            background-size: cover;
+            background-position: center;
         }
+
         .container {
             text-align: center;
         }
+
         .container h2 {
             margin-bottom: 20px;
         }
+
         .container button {
             padding: 10px 20px;
             margin: 0 10px;
             border: none;
             border-radius: 5px;
             cursor: pointer;
-            background-color: #4CAF50;
+            background-color: #FF0000;
             color: white;
         }
+
         .container button:hover {
-            background-color: #45a049;
+            background-color: #FF3333;
         }
     </style>
 </head>
+
 <body>
     <div class="container">
         <h2>Welcome to the Wrist Rotation Website </h2>
@@ -44,4 +52,5 @@
         <button onclick="href='signup.php'">Sign Up</button>
     </div>
 </body>
+
 </html>
