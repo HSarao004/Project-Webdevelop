@@ -185,7 +185,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['comment'])) {
                 <p>Model: <?= isset($watch['model']) ? $watch['model'] : 'N/A' ?></p>
                 <p>Year: <?= isset($watch['watchYear']) ? $watch['watchYear'] : 'N/A' ?></p>
                 <p>Movement: <?= isset($watch['movement']) ? $watch['movement'] : 'N/A' ?></p>
-                <p>Description: <?= isset($watch['watchDes']) ? $watch['watchDes'] : 'N/A' ?></p>
+                
                 <p>Category: <?= isset($watch['category']) ? $watch['category'] : 'N/A' ?></p>
                 <p>Created: <?= isset($watch['date_created']) ? $watch['date_created'] : 'N/A' ?></p>
             </div>
