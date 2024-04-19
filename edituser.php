@@ -1,4 +1,5 @@
 <?php
+require('authenticate.php');
 session_start();
 
 // Check if the user is logged in, if not, redirect to login page
@@ -125,7 +126,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         }
 
         button[type="submit"] {
-            background-color: #4CAF50;
+            background-color: red;
             color: white;
             padding: 10px 20px;
             border: none;
@@ -175,9 +176,10 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     </td>
                 </tr>
             <?php endforeach; ?>
+            
             <tr>
                 <td></td>
-                <td>
+                <td><h2>Add new user here </h2>
                     <form action="" method="post">
                         <input type="email" name="newUsername" placeholder="New Username" required>
                         <input type="password" name="newPassword" placeholder="New Password" required>

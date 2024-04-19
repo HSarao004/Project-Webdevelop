@@ -1,6 +1,7 @@
 <?php
-// Include your database connection file
+
 require 'connect.php';
+require('authenticate.php');
 
 // Create Category
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['create_category'])) {
@@ -86,7 +87,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['update_category'])) {
         }
 
         input[type="submit"] {
-            background-color: #4CAF50;
+            background-color: red;
             color: #fff;
             padding: 10px 20px;
             border: none;
